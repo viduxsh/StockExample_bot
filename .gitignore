@@ -1,2 +1,5 @@
 # Env file
 .env
+
+# Log folder
+/data

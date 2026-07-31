@@ -1,6 +1,3 @@
-# StockExample_bot
-A stock example telegram bot.
-
 # [StockExample_bot](https://github.com/viduxsh/StockExample_bot)
 
 [![LICENSE](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/viduxsh/StockExample_bot/blob/main/LICENSE)
