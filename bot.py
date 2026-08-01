@@ -2,9 +2,29 @@ import os
 import json
 import logging
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes, Application, TypeHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder, 
+    CommandHandler, 
+    MessageHandler, 
+    CallbackQueryHandler, 
+    InlineQueryHandler,
+    PreCheckoutQueryHandler,
+    filters, 
+    ContextTypes, 
+    Application, 
+    TypeHandler
+)
+
 from config import BOT_TOKEN, ADMIN_IDS
+from handlers.basic import (
+    start_command, help_command, format_command, album_command, 
+    dynamic_file_command, echo_text, handle_media
+)
+from handlers.conversation import feedback_conv_handler
+from handlers.inline import inline_query_handler
+from handlers.payment import buy_command, precheckout_callback, successful_payment_callback
+from handlers.admin import stats_command, error_handler
 
 # Enable logging
 logging.basicConfig(
@@ -28,7 +48,6 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Determine the type of operation
     operation = "UNKNOWN"
     details = ""
     if update.message:
@@ -74,90 +93,40 @@ async def post_init(application: Application):
     """Send a startup message to all admins."""
     for admin_id in ADMIN_IDS:
         try:
-            await application.bot.send_message(chat_id=admin_id, text="🚀 Il bot si è avviato.")
+            await application.bot.send_message(chat_id=admin_id, text="🚀 Bot started.")
         except Exception as e:
-            logger.error(f"Errore nell'invio del messaggio di avvio a {admin_id}: {e}")
+            logger.error(f"Error sending message to {admin_id}: {e}")
 
 async def post_stop(application: Application):
     """Send a shutdown message to all admins."""
     for admin_id in ADMIN_IDS:
         try:
-            await application.bot.send_message(chat_id=admin_id, text="🛑 Il bot si è spento.")
+            await application.bot.send_message(chat_id=admin_id, text="🛑 Bot stopped.")
         except Exception as e:
-            logger.error(f"Errore nell'invio del messaggio di spegnimento a {admin_id}: {e}")
+            logger.error(f"Error sending message to {admin_id}: {e}")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message when the command /start is issued."""
-    user = update.effective_user
-    await update.message.reply_html(
-        rf"Hi {user.mention_html()}! I'm an example bot showcasing the python-telegram-bot features. "
-        "Try /help to see what I can do.",
-    )
+# --- JOB QUEUE EXAMPLES ---
+async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Add a job to the queue."""
+    chat_id = update.effective_message.chat_id
+    try:
+        # args[0] should contain the time for the timer in seconds
+        due = float(context.args[0])
+        if due < 0:
+            await update.effective_message.reply_text("You can't go back in time!")
+            return
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message when the command /help is issued."""
-    help_text = (
-        "/start - Welcome message\n"
-        "/keyboard - Show a custom reply keyboard\n"
-        "/inline - Show an inline keyboard\n"
-        "Send any text - Echo the text\n"
-        "Send a photo, document, location - React to media"
-    )
-    await update.message.reply_text(help_text)
+        context.job_queue.run_once(alarm, due, chat_id=chat_id, name=str(chat_id), data=due)
+        await update.effective_message.reply_text(f"Timer set! It will ring in {due} seconds.")
+    except (IndexError, ValueError):
+        await update.effective_message.reply_text("Usage: /timer <seconds>")
 
-async def keyboard_example(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show a custom reply keyboard."""
-    reply_keyboard = [['Option 1', 'Option 2'], ['Remove Keyboard']]
-    markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text('Please choose an option:', reply_markup=markup)
+async def alarm(context: ContextTypes.DEFAULT_TYPE):
+    """Send the alarm message."""
+    job = context.job
+    await context.bot.send_message(job.chat_id, text=f"Beep! {job.data} seconds have passed!")
 
-async def inline_example(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show an inline keyboard."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Option A", callback_data='A'),
-            InlineKeyboardButton("Option B", callback_data='B'),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Please choose:', reply_markup=reply_markup)
-
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Parses the CallbackQuery and updates the message text."""
-    query = update.callback_query
-    await query.answer() # Required to stop the loading animation on the button
-    await query.edit_message_text(text=f"Selected option: {query.data}")
-
-async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Echo the user message (only text) and save it."""
-    text = update.message.text
-    user = update.effective_user
-    
-    # Save message to file
-    with open(os.path.join(DATA_DIR, "messages.txt"), "a", encoding="utf-8") as f:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        f.write(f"[{timestamp}] {user.username or user.first_name}: {text}\n")
-
-    if text == 'Remove Keyboard':
-        await update.message.reply_text('Keyboard removed.', reply_markup=ReplyKeyboardRemove())
-    else:
-        await update.message.reply_text(f"You said: {text}")
-
-async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Echo when a photo is received."""
-    await update.message.reply_text("Nice photo! I received it.")
-
-async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Echo when a document is received."""
-    await update.message.reply_text(f"Document received: {update.message.document.file_name}")
-
-async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Echo when location is received."""
-    await update.message.reply_text("Location received!")
-
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    """Log the error."""
-    logger.error("Exception while handling an update:", exc_info=context.error)
+# --------------------------
 
 if __name__ == '__main__':
     # Initialize the application
@@ -172,20 +141,33 @@ if __name__ == '__main__':
     # Register the logging handler first (Group -1 to catch everything before other handlers)
     application.add_handler(TypeHandler(Update, log_update), group=-1)
 
-    # Command handlers
-    application.add_handler(CommandHandler("start", start))
+    # Basic Command handlers
+    application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("keyboard", keyboard_example))
-    application.add_handler(CommandHandler("inline", inline_example))
+    application.add_handler(CommandHandler("format", format_command))
+    application.add_handler(CommandHandler("album", album_command))
+    application.add_handler(CommandHandler("dynamic", dynamic_file_command))
+    
+    # Timer / Job Queue Command
+    application.add_handler(CommandHandler("timer", set_timer))
+    
+    # Admin Commands
+    application.add_handler(CommandHandler("stats", stats_command))
 
-    # Callback Query handler (for inline buttons)
-    application.add_handler(CallbackQueryHandler(button_callback))
+    # Conversation handler (Feedback)
+    application.add_handler(feedback_conv_handler)
+    
+    # Inline Query Handler
+    application.add_handler(InlineQueryHandler(inline_query_handler))
+    
+    # Payment Handlers
+    application.add_handler(CommandHandler("buy", buy_command))
+    application.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+    application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
 
-    # Message handlers
+    # Media & Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_text))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    application.add_handler(MessageHandler(filters.LOCATION, handle_location))
+    application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL | filters.LOCATION, handle_media))
 
     # Error handler
     application.add_error_handler(error_handler)

@@ -42,9 +42,22 @@ This guide will walk you through setting up and running your Telegram Bot using 
      docker-compose down
      ```
 
-## Updating the Bot (Aggiornamento del Bot)
+## 🌟 Features
 
-If you modify the Python code (e.g., `bot.py`) or install new packages in `requirements.txt`, you need to rebuild the Docker image to apply the changes:
+This bot is a template that includes several advanced features of the Telegram Bot API:
+- **Conversation Handler**: Interactive flows (e.g., feedback survey with `/feedback`).
+- **Inline Queries**: Use the bot in any chat by typing `@BotUsername query`.
+- **Job Queue**: Schedule tasks (e.g., timer with `/timer`).
+- **Payments**: Example of billing with Stripe Test (`/buy`).
+- **Dynamic file generation**: Create and send files on the fly (`/dynamic`).
+- **Media Groups & Formatting**: Groups of photos (`/album`) and MarkdownV2 (`/format`).
+- **Admin Commands**: Statistics reserved to admins (`/stats`) and advanced error handling.
+
+## 🔄 Updating the Bot
+
+When you modify the source code (e.g. adding new handlers) or modify the dependencies in `requirements.txt`, **you must rebuild the Docker image**.
+
+Here is the correct procedure to update the bot in production or in local:
 
 1. Stop the current bot and rebuild the image:
    ```bash

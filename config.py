@@ -13,3 +13,6 @@ if not BOT_TOKEN:
 # Parse ADMIN_IDS as a list of integers
 admin_ids_raw = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(x.strip()) for x in admin_ids_raw.split(",") if x.strip().isdigit()]
+
+# Stripe payment token
+STRIPE_PROVIDER_TOKEN = os.getenv("STRIPE_PROVIDER_TOKEN")
