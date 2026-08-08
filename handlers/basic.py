@@ -27,7 +27,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "\n<b>Advanced Features:</b>\n"
         "/feedback - Start a multi-step survey\n"
         "/timer &lt;seconds&gt; - Set a timer\n"
-        "/buy - Payment example (Stripe Test)\n"
+        "/buy - Payment example (Smart Glocal Test)\n"
+        "\n<b>Admin Commands:</b>\n"
+        "/stats - Bot statistics and log file info\n"
+        "/setreply &lt;keyword&gt; &lt;response&gt; - Add/update an auto-reply rule\n"
+        "/delreply &lt;keyword&gt; - Delete an auto-reply rule\n"
+        "/listreplies - List all configured auto-reply rules\n"
         "\n<b>Other:</b>\n"
         "Try typing @{} in another chat to test Inline Queries!".format(context.bot.username)
     )
@@ -40,11 +45,11 @@ async def format_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "_Italic_\n"
         "__Underline__\n"
         "~Strikethrough~\n"
-        "||Spoiler|| - Click to read\n"
-        "[Inline link](http://www.example.com/)\n"
+        "||Spoiler|| \- Click to read\n"
+        "[Inline link](http://www\.example\.com/)\n"
         "`Inline code`\n"
         "```python\n"
-        "print('Python formatted code')\n"
+        "print\\('Python formatted code'\\)\n"
         "```"
     )
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN_V2)

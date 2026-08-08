@@ -1,8 +1,7 @@
-
 services:
   telegram-bot:
     build: .
-    container_name: stock_example_bot
+    container_name: stockexamplebot_container
     restart: unless-stopped
     env_file:
       - .env

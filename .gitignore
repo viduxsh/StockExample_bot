@@ -1,5 +1,12 @@
-# Env file
+# Python local environment/caches
+__pycache__/
+*.pyc
+venv/
+env/
+.venv/
+
+# Credentials and settings
 .env
 
-# Log folder
-/data
+# Dynamic data/logs directory
+/data/

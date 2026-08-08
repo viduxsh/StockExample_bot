@@ -1,6 +1,5 @@
 import os
 import json
-import logging
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -25,13 +24,15 @@ from handlers.conversation import feedback_conv_handler
 from handlers.inline import inline_query_handler
 from handlers.payment import buy_command, precheckout_callback, successful_payment_callback
 from handlers.admin import stats_command, error_handler
-
-# Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+from handlers.autoreply import (
+    handle_autoreply, setreply_command, delreply_command, listreplies_command
 )
-logger = logging.getLogger(__name__)
+
+from utils.logger import setup_logging, get_logger
+
+# Initialise file + console logging (must happen before any handler imports log)
+setup_logging()
+logger = get_logger(__name__)
 
 # Ensure data directory exists for saving files
 DATA_DIR = "data"
@@ -133,6 +134,10 @@ if __name__ == '__main__':
     application = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
+        .connect_timeout(30)
+        .read_timeout(30)
+        .write_timeout(30)
+        .pool_timeout(30)
         .post_init(post_init)
         .post_stop(post_stop)
         .build()
@@ -153,6 +158,9 @@ if __name__ == '__main__':
     
     # Admin Commands
     application.add_handler(CommandHandler("stats", stats_command))
+    application.add_handler(CommandHandler("setreply", setreply_command))
+    application.add_handler(CommandHandler("delreply", delreply_command))
+    application.add_handler(CommandHandler("listreplies", listreplies_command))
 
     # Conversation handler (Feedback)
     application.add_handler(feedback_conv_handler)
@@ -166,7 +174,7 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
 
     # Media & Message handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_text))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_autoreply))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL | filters.LOCATION, handle_media))
 
     # Error handler

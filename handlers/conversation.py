@@ -6,6 +6,9 @@ from telegram.ext import (
     ConversationHandler,
     ContextTypes
 )
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # States for the conversation
 RATING, FEEDBACK = range(2)
@@ -43,8 +46,6 @@ async def feedback_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     rating = context.user_data.get('rating')
     
     # In a real app, you would save this to a database
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"Feedback from {user.id} ({user.first_name}): Rating={rating}, Comment={feedback_text}")
     
     await update.message.reply_text(

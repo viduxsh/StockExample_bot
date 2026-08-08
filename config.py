@@ -14,5 +14,5 @@ if not BOT_TOKEN:
 admin_ids_raw = os.getenv("ADMIN_IDS", "")
 ADMIN_IDS = [int(x.strip()) for x in admin_ids_raw.split(",") if x.strip().isdigit()]
 
-# Stripe payment token
-STRIPE_PROVIDER_TOKEN = os.getenv("STRIPE_PROVIDER_TOKEN")
+# Smart Glocal (TEST) payment provider token (obtained via @BotFather → Payments → Smart Glocal)
+PAYMENT_PROVIDER_TOKEN = os.getenv("PAYMENT_PROVIDER_TOKEN")

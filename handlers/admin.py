@@ -1,11 +1,12 @@
 import os
 import json
-import logging
+import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
 from config import ADMIN_IDS
+from utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 DATA_DIR = "data"
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -14,21 +15,39 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id not in ADMIN_IDS:
         await update.message.reply_text("You are not authorized to use this command.")
         return
-        
+
+    def _file_info(filename: str) -> str:
+        path = os.path.join(DATA_DIR, filename)
+        if not os.path.exists(path):
+            return f"{filename}: not found"
+        size_kb = os.path.getsize(path) / 1024
+        lines = sum(1 for _ in open(path, encoding="utf-8", errors="ignore"))
+        return f"{filename}: {lines} lines ({size_kb:.1f} KB)"
+
     try:
-        # Count the lines in operations_log.jsonl
-        log_path = os.path.join(DATA_DIR, "operations_log.jsonl")
-        count = 0
-        if os.path.exists(log_path):
-            with open(log_path, 'r', encoding='utf-8') as f:
-                count = sum(1 for _ in f)
-                
-        await update.message.reply_text(f"📊 Bot Statistics:\n- Total recorded operations: {count}")
+        op_log = _file_info("operations_log.jsonl")
+        bot_log = _file_info("bot.log")
+        err_log = _file_info("errors.log")
+
+        text = (
+            "📊 *Bot Statistics*\n\n"
+            "*Log files:*\n"
+            f"• `{op_log}`\n"
+            f"• `{bot_log}`\n"
+            f"• `{err_log}`"
+        )
+        await update.message.reply_text(text, parse_mode="Markdown")
     except Exception as e:
         await update.message.reply_text(f"Error reading statistics: {e}")
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     """Log the error and send a message to notify the developer."""
+
+    # httpx.ReadError is a transient network issue, not a bot bug — log as warning only
+    if isinstance(context.error, httpx.ReadError):
+        logger.warning("httpx.ReadError (transient network issue): %s", context.error)
+        return
+
     logger.error("Exception while handling an update:", exc_info=context.error)
 
     # Send a message to the admins

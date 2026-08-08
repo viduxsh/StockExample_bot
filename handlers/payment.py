@@ -1,13 +1,13 @@
 from telegram import Update, LabeledPrice
 from telegram.ext import ContextTypes
-from config import STRIPE_PROVIDER_TOKEN
+from config import PAYMENT_PROVIDER_TOKEN
 
 async def buy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send an invoice for a test payment."""
-    if not STRIPE_PROVIDER_TOKEN or STRIPE_PROVIDER_TOKEN == "your_stripe_test_token_here":
+    if not PAYMENT_PROVIDER_TOKEN or PAYMENT_PROVIDER_TOKEN == "your_smart_glocal_token_here":
         await update.message.reply_text(
-            "Stripe payment is not configured. "
-            "Add STRIPE_PROVIDER_TOKEN in the .env file to test this feature."
+            "Smart Glocal payment not configured. "
+            "Add PAYMENT_PROVIDER_TOKEN to the .env file to test this feature."
         )
         return
         
@@ -28,7 +28,7 @@ async def buy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title,
         description,
         payload,
-        STRIPE_PROVIDER_TOKEN,
+        PAYMENT_PROVIDER_TOKEN,
         currency,
         prices,
     )
@@ -47,3 +47,4 @@ async def successful_payment_callback(update: Update, context: ContextTypes.DEFA
     """Confirms the successful payment."""
     # do something after successfully receiving payment
     await update.message.reply_text("Thank you for your support! We received your coffee. ☕")
+
