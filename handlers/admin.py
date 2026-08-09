@@ -3,6 +3,7 @@ import json
 import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.error import NetworkError
 from config import ADMIN_IDS
 from utils.logger import get_logger
 
@@ -40,12 +41,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Error reading statistics: {e}")
 
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     """Log the error and send a message to notify the developer."""
 
-    # httpx.ReadError is a transient network issue, not a bot bug — log as warning only
-    if isinstance(context.error, httpx.ReadError):
-        logger.warning("httpx.ReadError (transient network issue): %s", context.error)
+    # httpx and NetworkError are transient network issues, not a bot bug — log as warning only
+    if isinstance(context.error, (httpx.HTTPError, NetworkError)):
+        logger.warning("Network or HTTP error (transient issue): %s", context.error)
         return
 
     logger.error("Exception while handling an update:", exc_info=context.error)
