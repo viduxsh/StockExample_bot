@@ -106,6 +106,7 @@ async def post_stop(application: Application):
         except Exception as e:
             logger.error(f"Error sending message to {admin_id}: {e}")
 
+
 # --- JOB QUEUE EXAMPLES ---
 async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Add a job to the queue."""
@@ -139,7 +140,7 @@ if __name__ == '__main__':
         .write_timeout(30)
         .pool_timeout(30)
         .post_init(post_init)
-        .post_stop(post_stop)
+        #.post_stop(post_stop)
         .build()
     )
 
@@ -182,3 +183,20 @@ if __name__ == '__main__':
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Send shutdown message manually after polling has stopped
+    import asyncio
+    from telegram import Bot
+
+    async def send_shutdown_message():
+        bot = Bot(BOT_TOKEN)
+        for admin_id in ADMIN_IDS:
+            try:
+                await bot.send_message(chat_id=admin_id, text="🛑 Bot stopped.")
+            except Exception as e:
+                logger.error(f"Error sending shutdown message to {admin_id}: {e}")
+
+    try:
+        asyncio.run(send_shutdown_message())
+    except Exception as e:
+        logger.error(f"Failed to run shutdown message task: {e}")
