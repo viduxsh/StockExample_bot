@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -40,9 +40,10 @@ async def handle_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     Falls back to echoing the original message if no keyword matches
     (preserves the previous echo_text behaviour).
     """
-    text = update.message.text
-    if not text:
+    if not update.message or not update.message.text:
         return
+    text = update.message.text
+
 
     replies = load_replies()
     text_lower = text.lower()

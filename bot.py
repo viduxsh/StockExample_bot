@@ -27,6 +27,8 @@ from handlers.admin import stats_command, error_handler
 from handlers.autoreply import (
     handle_autoreply, setreply_command, delreply_command, listreplies_command
 )
+from handlers.business import business_connection_handler, business_message_handler
+
 
 from utils.logger import setup_logging, get_logger
 
@@ -70,6 +72,16 @@ async def log_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.inline_query:
         operation = "INLINE_QUERY"
         details = update.inline_query.query
+    elif update.business_message:
+        if update.business_message.text:
+            operation = "BUSINESS_TEXT_MESSAGE"
+            details = update.business_message.text
+        else:
+            operation = "BUSINESS_MESSAGE"
+    elif update.business_connection:
+        operation = "BUSINESS_CONNECTION"
+        details = f"Connection ID: {update.business_connection.id}"
+
         
     user_info = {
         "id": user.id,
@@ -140,7 +152,7 @@ if __name__ == '__main__':
         .write_timeout(30)
         .pool_timeout(30)
         .post_init(post_init)
-        #.post_stop(post_stop)
+        .post_stop(post_stop)
         .build()
     )
 
@@ -170,9 +182,16 @@ if __name__ == '__main__':
     application.add_handler(InlineQueryHandler(inline_query_handler))
     
     # Payment Handlers
+    # Activate payments on BotFather
     application.add_handler(CommandHandler("buy", buy_command))
     application.add_handler(PreCheckoutQueryHandler(precheckout_callback))
     application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
+
+    # Business / Secretary Handlers
+    # Activate secretary mode on BotFather
+    # Using group 1 and 2 so they don't consume updates in the default group 0
+    application.add_handler(TypeHandler(Update, business_connection_handler), group=1)
+    application.add_handler(TypeHandler(Update, business_message_handler), group=2)
 
     # Media & Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_autoreply))
@@ -183,20 +202,3 @@ if __name__ == '__main__':
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-    
-    # Send shutdown message manually after polling has stopped
-    import asyncio
-    from telegram import Bot
-
-    async def send_shutdown_message():
-        bot = Bot(BOT_TOKEN)
-        for admin_id in ADMIN_IDS:
-            try:
-                await bot.send_message(chat_id=admin_id, text="🛑 Bot stopped.")
-            except Exception as e:
-                logger.error(f"Error sending shutdown message to {admin_id}: {e}")
-
-    try:
-        asyncio.run(send_shutdown_message())
-    except Exception as e:
-        logger.error(f"Failed to run shutdown message task: {e}")
