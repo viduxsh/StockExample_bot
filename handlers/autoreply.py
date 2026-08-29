@@ -69,65 +69,71 @@ async def handle_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 async def setreply_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/setreply <keyword> <response> — add or update an auto-reply rule."""
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Non autorizzato.")
+        await update.message.reply_text("⛔ Not authorized.")
         return
 
-    if len(context.args) < 2:
+    full_args = " ".join(context.args)
+    if "#" not in full_args:
         await update.message.reply_text(
-            "Uso: /setreply <keyword> <risposta>\n"
-            "Esempio: /setreply ciao Ciao! Come posso aiutarti? 😊"
+            "Usage: /setreply <keyword or phrase> # <response>\n"
+            "Example: /setreply Hi, how are you? # Hi! All good! 😊"
         )
         return
 
-    keyword = context.args[0].lower()
-    response = " ".join(context.args[1:])
+    keyword, response = full_args.split("#", 1)
+    keyword = keyword.strip().lower()
+    response = response.strip()
+
+    if not keyword or not response:
+        await update.message.reply_text("❌ You must specify both a keyword and a valid response.")
+        return
 
     replies = load_replies()
-    action = "aggiornata" if keyword in replies else "aggiunta"
+    action = "updated" if keyword in replies else "added"
     replies[keyword] = response
     save_replies(replies)
 
     logger.info("Auto-reply %s by admin %s: %r → %r", action, update.effective_user.id, keyword, response)
-    await update.message.reply_text(f"✅ Risposta {action}:\n🔑 `{keyword}` → {response}", parse_mode="Markdown")
+    await update.message.reply_text(f"✅ Response {action}:\n🔑 `{keyword}` → {response}", parse_mode="Markdown")
 
 
 async def delreply_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/delreply <keyword> — remove an auto-reply rule."""
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Non autorizzato.")
+        await update.message.reply_text("⛔ Not authorized.")
         return
 
     if not context.args:
-        await update.message.reply_text("Uso: /delreply <keyword>")
+        await update.message.reply_text("Usage: /delreply <keyword or phrase>")
         return
 
-    keyword = context.args[0].lower()
+    keyword = " ".join(context.args).lower()
     replies = load_replies()
 
     if keyword not in replies:
-        await update.message.reply_text(f"❌ Keyword `{keyword}` non trovata.", parse_mode="Markdown")
+        await update.message.reply_text(f"❌ Keyword `{keyword}` not found.", parse_mode="Markdown")
         return
 
     del replies[keyword]
     save_replies(replies)
 
     logger.info("Auto-reply deleted by admin %s: %r", update.effective_user.id, keyword)
-    await update.message.reply_text(f"🗑️ Risposta per `{keyword}` eliminata.", parse_mode="Markdown")
+    await update.message.reply_text(f"🗑️ Response for `{keyword}` deleted.", parse_mode="Markdown")
 
 
 async def listreplies_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/listreplies — show all configured auto-reply rules."""
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Non autorizzato.")
+        await update.message.reply_text("⛔ Not authorized.")
         return
 
     replies = load_replies()
 
     if not replies:
-        await update.message.reply_text("📭 Nessuna risposta automatica configurata.\nUsa /setreply per aggiungerne una.")
+        await update.message.reply_text("📭 No auto-replies configured.\nUse /setreply to add one.")
         return
 
-    lines = ["📋 *Risposte automatiche configurate:*\n"]
+    lines = ["📋 *Auto-replies configured:*\n"]
     for keyword, response in replies.items():
         lines.append(f"🔑 `{keyword}`\n↩️ {response}\n")
 

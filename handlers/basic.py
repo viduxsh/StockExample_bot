@@ -30,7 +30,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/buy - Payment example (Smart Glocal Test)\n"
         "\n<b>Admin Commands:</b>\n"
         "/stats - Bot statistics and log file info\n"
-        "/setreply &lt;keyword&gt; &lt;response&gt; - Add/update an auto-reply rule\n"
+        "/setreply &lt;keyword or phrase&gt; # &lt;response&gt; - Add/update an auto-reply rule\n"
         "/delreply &lt;keyword&gt; - Delete an auto-reply rule\n"
         "/listreplies - List all configured auto-reply rules\n"
         "\n<b>Other:</b>\n"
@@ -92,6 +92,8 @@ async def echo_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Echo when media is received."""
+    if not update.message:
+        return
     if update.message.photo:
         await update.message.reply_text("Nice photo! I received it.")
     elif update.message.document:
