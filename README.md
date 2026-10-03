@@ -45,13 +45,19 @@ This guide will walk you through setting up and running your Telegram Bot using 
 ## 🌟 Features
 
 This bot is a template that includes several advanced features of the Telegram Bot API:
+- **Business / Secretary Mode**: Attach the bot to your personal Telegram Premium account. It will automatically reply on your behalf in private chats based on your auto-reply rules.
+- **Auto-replies Engine**: Create dynamic auto-reply rules directly from Telegram using `/setreply <keyword> # <response> # <mode>`.
+  - Modes supported: `match` (exact text), `contains` (substring), and `first` (triggers on the very first message sent by a user, automatically resetting after 24h of inactivity).
+- **Custom Variables System**: Personalize your auto-replies using placeholders.
+  - Built-in: `$first_name`, `$last_name`, `$username`, `$full_name`.
+  - Custom: Define your own via `/setvar <name> <value>` (e.g. `/setvar link https://...` and use `$link` in replies).
 - **Conversation Handler**: Interactive flows (e.g., feedback survey with `/feedback`).
 - **Inline Queries**: Use the bot in any chat by typing `@BotUsername query`.
 - **Job Queue**: Schedule tasks (e.g., timer with `/timer`).
 - **Payments**: Example of billing with Stripe Test (`/buy`).
 - **Dynamic file generation**: Create and send files on the fly (`/dynamic`).
 - **Media Groups & Formatting**: Groups of photos (`/album`) and MarkdownV2 (`/format`).
-- **Admin Commands**: Statistics reserved to admins (`/stats`) and advanced error handling.
+- **Admin Commands**: Manage bot state with `/resetfirst` (resets the 24h inactivity tracker), view stats with `/stats`, and handle errors automatically.
 
 ## 🔄 Updating the Bot
 

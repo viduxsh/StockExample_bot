@@ -12,7 +12,8 @@ from telegram.ext import (
     filters, 
     ContextTypes, 
     Application, 
-    TypeHandler
+    TypeHandler,
+    PicklePersistence,
 )
 
 from config import BOT_TOKEN, ADMIN_IDS
@@ -25,7 +26,10 @@ from handlers.inline import inline_query_handler
 from handlers.payment import buy_command, precheckout_callback, successful_payment_callback
 from handlers.admin import stats_command, error_handler
 from handlers.autoreply import (
-    handle_autoreply, setreply_command, delreply_command, listreplies_command
+    handle_autoreply,
+    setreply_command, delreply_command, listreplies_command,
+    setvar_command, listvar_command, deletevar_command,
+    resetfirst_command,
 )
 from handlers.business import business_connection_handler, business_message_handler
 
@@ -143,10 +147,14 @@ async def alarm(context: ContextTypes.DEFAULT_TYPE):
 # --------------------------
 
 if __name__ == '__main__':
+    # PicklePersistence keeps user_data, chat_data and bot_data across restarts.
+    persistence = PicklePersistence(filepath=os.path.join(DATA_DIR, "bot_persistence"))
+
     # Initialize the application
     application = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
+        .persistence(persistence)
         .connect_timeout(30)
         .read_timeout(30)
         .write_timeout(30)
@@ -174,6 +182,10 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("setreply", setreply_command))
     application.add_handler(CommandHandler("delreply", delreply_command))
     application.add_handler(CommandHandler("listreplies", listreplies_command))
+    application.add_handler(CommandHandler("setvar", setvar_command))
+    application.add_handler(CommandHandler("listvar", listvar_command))
+    application.add_handler(CommandHandler("deletevar", deletevar_command))
+    application.add_handler(CommandHandler("resetfirst", resetfirst_command))
 
     # Conversation handler (Feedback)
     application.add_handler(feedback_conv_handler)
@@ -194,8 +206,12 @@ if __name__ == '__main__':
     application.add_handler(TypeHandler(Update, business_message_handler), group=2)
 
     # Media & Message handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_autoreply))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL | filters.LOCATION, handle_media))
+    # Run autoreply for ALL non-command messages (including stickers) in group 3
+    application.add_handler(MessageHandler(
+        ~filters.COMMAND | filters.Sticker.ALL,
+        handle_autoreply
+    ), group=3)
 
     # Error handler
     application.add_error_handler(error_handler)
