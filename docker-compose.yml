@@ -1,3 +1,5 @@
+name: stockexample_bot
+
 services:
   telegram-bot:
     build: .
